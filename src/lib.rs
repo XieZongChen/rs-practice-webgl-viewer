@@ -1,7 +1,7 @@
 use wasm_bindgen::{prelude::*, JsCast};
-use web_sys::{WebGlRenderingContext, WebGlShader, WebGlProgram};
+use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader};
 
-/// 为传入 canvas_id 创建一个 webGL 实例并返回
+/// 为传入 canvas_id 创建一个 WebGL 实例并返回
 /// # Arguments
 /// * `canvas_id` - html 中 canvas 标签的 id
 pub fn init_webgl_context(canvas_id: &str) -> Result<WebGlRenderingContext, JsValue> {
@@ -14,7 +14,7 @@ pub fn init_webgl_context(canvas_id: &str) -> Result<WebGlRenderingContext, JsVa
         .dyn_into::<WebGlRenderingContext>()
         .unwrap();
 
-    // webgl 大小即为 canvas 大小
+    // WebGL 大小即为 canvas 大小
     gl.viewport(
         0,
         0,
@@ -27,7 +27,7 @@ pub fn init_webgl_context(canvas_id: &str) -> Result<WebGlRenderingContext, JsVa
 
 /// 创建一个着色器
 /// # Arguments
-/// * `gl` - webGl 上下文
+/// * `gl` - WebGL 上下文
 /// * `shader_type` 要创建的着色器类型
 /// * `source` 着色器源码
 pub fn create_shader(
@@ -65,8 +65,8 @@ pub fn create_shader(
     }
 }
 
-/// 给传入 webgl 上下文创建一个 webgl 程序，如果创建成功则返回该程序
-/// * `gl` - webGl 上下文
+/// 给传入 WebGL 上下文创建一个 WebGL 程序，如果创建成功则返回该程序
+/// * `gl` - WebGL 上下文
 pub fn setup_shaders(gl: &WebGlRenderingContext) -> Result<WebGlProgram, JsValue> {
     /*
      * 创建一个顶点着色器的 GLSL 源码
@@ -131,4 +131,43 @@ pub fn setup_shaders(gl: &WebGlRenderingContext) -> Result<WebGlProgram, JsValue
                 .unwrap_or_else(|| "Unknown error linking program".into()),
         ));
     }
+}
+
+/// 将顶点列表放入 WebGL 的缓冲区，并设置到 WebGL 程序中
+/// * `gl` - WebGL 上下文
+/// * `vertices` - 顶点列表
+/// * `shader_program` - WebGL 程序
+pub fn setup_vertices(gl: &WebGlRenderingContext, vertices: &[f32], shader_program: &WebGlProgram) {
+    // 创建顶点数组，这会直接扰乱计算机内存，所以使用 unsafe
+    let vertices_array = unsafe { js_sys::Float32Array::view(&vertices) };
+    // 创建和使用缓冲区，它就像一个临时存储空间，用于放置 WebGL 将使用的数据
+    let vertex_buffer = gl.create_buffer().unwrap();
+
+    // 将缓冲绑定到 WebGL 内部的 ARRAY_BUFFER 绑定点上
+    gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&vertex_buffer));
+    /*
+     * 将数据 vertices_array 存放到 ARRAY_BUFFER 绑定点的缓冲中
+     * 第三个参数提示 WebGL 将怎么使用这些数据，STATIC_DRAW 提示 WebGL 我们不会经常改变这些数据，WebGL 会根据提示做出一些优化
+     */
+    gl.buffer_data_with_array_buffer_view(
+        WebGlRenderingContext::ARRAY_BUFFER,
+        &vertices_array,
+        WebGlRenderingContext::STATIC_DRAW,
+    );
+
+    // 找到 coordinates 属性的位置（这是 setup_shaders 的 vertex_shader_source 中使用的属性）
+    let coordinates_location = gl.get_attrib_location(&shader_program, "coordinates");
+
+    gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&vertex_buffer));
+    // 告诉 WebGL 如何从 ARRAY_BUFFER 中读取数据
+    gl.vertex_attrib_pointer_with_i32(
+        coordinates_location as u32,    // 所要设置读取方式的属性
+        3,                              // 每次迭代运行提取三个单位数据（x、y、z）
+        WebGlRenderingContext::FLOAT,  // 每个单位的数据类型是 32 位浮点型
+        false,                    // 不需要归一化数据
+        0,                            // 0 = 移动单位数量 * 每个单位占用内存（sizeof(type)）每次迭代运行运动多少内存到下一个数据开始点
+        0,                            // 从缓冲起始位置开始读取
+    );
+    // 启动这个属性的设置
+    gl.enable_vertex_attrib_array(coordinates_location as u32);
 }
