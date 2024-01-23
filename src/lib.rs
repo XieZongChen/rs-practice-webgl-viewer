@@ -161,13 +161,51 @@ pub fn setup_vertices(gl: &WebGlRenderingContext, vertices: &[f32], shader_progr
     gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&vertex_buffer));
     // 告诉 WebGL 如何从 ARRAY_BUFFER 中读取数据
     gl.vertex_attrib_pointer_with_i32(
-        coordinates_location as u32,    // 所要设置读取方式的属性
-        3,                              // 每次迭代运行提取三个单位数据（x、y、z）
-        WebGlRenderingContext::FLOAT,  // 每个单位的数据类型是 32 位浮点型
-        false,                    // 不需要归一化数据
-        0,                            // 0 = 移动单位数量 * 每个单位占用内存（sizeof(type)）每次迭代运行运动多少内存到下一个数据开始点
-        0,                            // 从缓冲起始位置开始读取
+        coordinates_location as u32,  // 所要设置读取方式的属性
+        3,                            // 每次迭代运行提取三个单位数据（x、y、z）
+        WebGlRenderingContext::FLOAT, // 每个单位的数据类型是 32 位浮点型
+        false,                        // 不需要归一化数据
+        0, // 0 = 移动单位数量 * 每个单位占用内存（sizeof(type)）每次迭代运行运动多少内存到下一个数据开始点
+        0, // 从缓冲起始位置开始读取
     );
     // 启动这个属性的设置
     gl.enable_vertex_attrib_array(coordinates_location as u32);
+}
+
+/// 绘制一个三角形并返回 WebGL 上下文
+/// * `canvas_id` - 绘制目标 canvas id
+/// * `selected_color` - 可选，绘制三角形的颜色
+#[wasm_bindgen]
+pub fn draw_triangle(
+    canvas_id: &str,
+    selected_color: Option<Vec<f32>>,
+) -> Result<WebGlRenderingContext, JsValue> {
+    let gl: WebGlRenderingContext = init_webgl_context(canvas_id).unwrap();
+    let shader_program: WebGlProgram = setup_shaders(&gl).unwrap();
+
+    // 定义三角形的点, 每个点都有 x、y、z 三个值
+    let vertices: [f32; 9] = [
+        0.0, 1.0, 0.0, // top
+        -1.0, -1.0, 0.0, // bottom left
+        1.0, -1.0, 0.0, // bottom right
+    ];
+    setup_vertices(&gl, &vertices, &shader_program);
+
+    // 初始化颜色，处理可选情况
+    let color = selected_color.unwrap_or(vec![1.0, 0.0, 0.0, 1.0]);
+    // 找到 setup_shaders 的 fragment_shader_source 中使用的 fragColor 属性
+    let color_location = gl
+        .get_uniform_location(&shader_program, "fragColor")
+        .unwrap();
+    // 给属性设置颜色
+    gl.uniform4fv_with_f32_array(Some(&color_location), &color);
+
+    // 绘制三角形
+    gl.draw_arrays(
+        WebGlRenderingContext::TRIANGLES, // 三角形
+        0, // 从第一个顶点开始
+        (vertices.len() / 3) as i32, // 每个顶点由三个值定义
+    );
+
+    Ok(gl)
 }
