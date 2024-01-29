@@ -1,4 +1,4 @@
-import init, { draw_triangle } from '../pkg/webassembly_webgl_viewer.js';
+import init, { draw_triangle } from '../wasm/pkg/webassembly_webgl_viewer.js';
 
 const CANVAS_ID = 'triangle';
 

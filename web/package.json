@@ -16,6 +16,8 @@
     "naive-ui": "^2.37.3",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
+    "vite-plugin-top-level-await": "^1.4.1",
+    "vite-plugin-wasm": "^3.3.0",
     "vue-tsc": "^1.8.25"
   }
 }
