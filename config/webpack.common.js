@@ -24,6 +24,10 @@ module.exports = {
         test: /\.css$/,
         use: ['vue-style-loader', 'css-loader'],
       },
+      {
+        test: /\.png$/,
+        type: 'asset/resource',
+      },
     ],
   },
   plugins: [
