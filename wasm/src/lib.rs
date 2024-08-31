@@ -208,6 +208,7 @@ pub fn draw_triangle(
     );
 
     
+    
     Ok(gl)
 }
 
