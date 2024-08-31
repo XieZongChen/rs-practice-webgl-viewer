@@ -207,6 +207,7 @@ pub fn draw_triangle(
         (vertices.len() / 3) as i32, // 每个顶点由三个值定义
     );
 
+    
     Ok(gl)
 }
 
